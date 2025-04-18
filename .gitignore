@@ -37,4 +37,4 @@ build/
 .env
 
 # Ignore volumes
-postgres_data/
+postgres_data
