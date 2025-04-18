@@ -5,18 +5,18 @@ services:
     image: postgres:15-alpine
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
+      interval: 2s
+      timeout: 2s
       retries: 5
 
     environment:
-      POSTGRES_DB: cloudstorage
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123123
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data #postgres_data:/var/lib/postgresql/data
 
   app:
     build: .
@@ -24,12 +24,15 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloudstorage
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 123123
-      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/cloudstorage
-      SPRING_FLYWAY_USER: postgres
-      SPRING_FLYWAY_PASSWORD: 123123
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloudstorage
+#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+#      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/cloudstorage
+#      SPRING_FLYWAY_USER: ${POSTGRES_USER}
+#      SPRING_FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "8080:8080"
