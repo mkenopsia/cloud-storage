@@ -24,20 +24,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: docker
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloudstorage
-#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-#      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/cloudstorage
-#      SPRING_FLYWAY_USER: ${POSTGRES_USER}
-#      SPRING_FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "8080:8080"
-    volumes:
-      - ./logs:/app/logs
 
 #volumes:
 #  postgres_data:
