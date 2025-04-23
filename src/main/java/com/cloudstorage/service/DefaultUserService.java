@@ -4,6 +4,7 @@ import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,6 +14,7 @@ import java.util.Optional;
 public class DefaultUserService implements UserService{
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public void save(UserPayload user) {
@@ -21,7 +23,7 @@ public class DefaultUserService implements UserService{
         }
         User newUser = new User();
         newUser.setUsername(user.username());
-        newUser.setPassword(user.password());
+        newUser.setPassword(passwordEncoder.encode(user.password()));
         this.userRepository.save(newUser);
     }
 
