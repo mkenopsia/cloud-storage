@@ -1,8 +1,9 @@
-package com.cloudstorage.service;
+package com.cloudstorage.service.impl;
 
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;
+import com.cloudstorage.service.api.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,7 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-public class DefaultUserService implements UserService{
+public class DefaultUserService implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;

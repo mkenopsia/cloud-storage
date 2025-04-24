@@ -1,8 +1,8 @@
 package com.cloudstorage.controller;
 
 import com.cloudstorage.controller.payload.UserPayload;
-import com.cloudstorage.service.AuthService;
-import com.cloudstorage.service.UserService;
+import com.cloudstorage.service.api.AuthService;
+import com.cloudstorage.service.api.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -20,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 @AllArgsConstructor
-public class UserController {
+public class AuthController {
 
     private final MessageSource messageSource;
     private final UserService userService;
@@ -46,7 +46,7 @@ public class UserController {
 
         this.authService.loginUser(userPayload);
 
-        return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", userPayload.username()));
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of("username", userPayload.username()));
     }
 
     @PostMapping("/auth/sign-out")
@@ -55,7 +55,7 @@ public class UserController {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ProblemDetail> handle(IllegalArgumentException exception, Locale locale) {
+    public ResponseEntity<ProblemDetail> handleAuthorizationException(IllegalArgumentException exception, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
         problemDetail.setProperty("message",
                 this.messageSource.getMessage(exception.getMessage(), null, "Error", locale));

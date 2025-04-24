@@ -1,4 +1,4 @@
-package com.cloudstorage.service;
+package com.cloudstorage.service.api;
 
 
 import com.cloudstorage.controller.payload.UserPayload;
