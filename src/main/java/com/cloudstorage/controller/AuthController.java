@@ -9,6 +9,8 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
@@ -49,13 +51,13 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("username", userPayload.username()));
     }
 
-    @PostMapping("/auth/sign-out")
-    public ResponseEntity<?> logout() {
-        return ResponseEntity.noContent().build();
-    }
+//    @PostMapping("/auth/sign-out")
+//    public ResponseEntity<?> logout() {
+//        return ResponseEntity.noContent().build();
+//    }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ProblemDetail> handleAuthorizationException(IllegalArgumentException exception, Locale locale) {
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleUserNotFoundCase(BadCredentialsException exception, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
         problemDetail.setProperty("message",
                 this.messageSource.getMessage(exception.getMessage(), null, "Error", locale));
