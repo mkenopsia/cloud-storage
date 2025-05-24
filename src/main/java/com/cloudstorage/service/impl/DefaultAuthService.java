@@ -1,6 +1,7 @@
 package com.cloudstorage.service.impl;
 
 import com.cloudstorage.controller.payload.UserPayload;
+import com.cloudstorage.controller.payload.UsernamePayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;
 import com.cloudstorage.service.api.AuthService;
@@ -14,13 +15,19 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.session.MapSessionRepository;
+import org.springframework.session.Session;
+import org.springframework.session.SessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +35,7 @@ public class DefaultAuthService implements AuthService {
 
     private final DaoAuthenticationProvider authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final SessionRepository sessionRepository;
 
     @Override
     public void loginUser(UserPayload userPayload) {
@@ -58,5 +66,17 @@ public class DefaultAuthService implements AuthService {
                 request,
                 response
         );
+    }
+
+    @Override
+    public UsernamePayload getUsernameFromSession(String encodedSessionId) {
+        Session session = sessionRepository.findById(this.decodeSessionId(encodedSessionId));
+        SecurityContextImpl securityContext = session.getAttribute("SPRING_SECURITY_CONTEXT");
+        Authentication auth = securityContext.getAuthentication();
+        return new UsernamePayload(auth.getName());
+    }
+
+    private String decodeSessionId(String encodedString) {
+        return new String(Base64.getDecoder().decode(encodedString));
     }
 }

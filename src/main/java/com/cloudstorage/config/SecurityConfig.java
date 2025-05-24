@@ -1,6 +1,7 @@
 package com.cloudstorage.config;
 
 import com.cloudstorage.service.impl.SecurityUserDetailsService;
+import io.netty.handler.codec.base64.Base64Decoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
@@ -18,6 +19,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+
+import java.util.Base64;
 
 @Configuration
 @EnableWebSecurity
