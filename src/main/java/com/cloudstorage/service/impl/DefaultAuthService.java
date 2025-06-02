@@ -33,50 +33,9 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class DefaultAuthService implements AuthService {
 
-    private final DaoAuthenticationProvider authenticationManager;
-    private final SecurityContextRepository securityContextRepository;
-    private final SessionRepository sessionRepository;
-
     @Override
-    public void loginUser(UserPayload userPayload) {
-
-        Authentication authRequest = new UsernamePasswordAuthenticationToken(
-                userPayload.username(), userPayload.password());
-
-        Authentication authResult;
-        try {
-            authResult = authenticationManager.authenticate(authRequest);
-        } catch (UsernameNotFoundException exception) {
-            throw new BadCredentialsException("users.errors.not_found");
-        } catch (BadCredentialsException exception) {
-            throw new BadCredentialsException("users.errors.invalid_password");
-        }
-
-
-        SecurityContextHolder.getContext().setAuthentication(authResult);
-
-        // Сохраняем контекст через репозиторий
-        HttpServletRequest request =
-                ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        HttpServletResponse response =
-                ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getResponse();
-
-        securityContextRepository.saveContext(
-                SecurityContextHolder.getContext(),
-                request,
-                response
-        );
-    }
-
-    @Override
-    public UsernamePayload getUsernameFromSession(String encodedSessionId) {
-        Session session = sessionRepository.findById(this.decodeSessionId(encodedSessionId));
-        SecurityContextImpl securityContext = session.getAttribute("SPRING_SECURITY_CONTEXT");
-        Authentication auth = securityContext.getAuthentication();
-        return new UsernamePayload(auth.getName());
-    }
-
-    private String decodeSessionId(String encodedString) {
-        return new String(Base64.getDecoder().decode(encodedString));
+    public UsernamePayload getUsernameFromSession() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return new UsernamePayload(username);
     }
 }
