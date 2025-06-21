@@ -9,7 +9,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data # TODO: потом перенести в volumes docker'а
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 2s
@@ -23,8 +23,20 @@ services:
     ports:
       - "6380:6379"
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio_container
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    command: ["server", "/data", "--console-address", ":9001"]
+
   app:
     build: .
+    container_name: cloud_storage
     depends_on:
       postgres:
         condition: service_healthy
