@@ -1,4 +1,4 @@
-package com.cloudstorage.service.impl;
+package com.cloudstorage.service;
 
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;

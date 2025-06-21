@@ -1,6 +1,6 @@
 package com.cloudstorage.controller;
 
-import com.cloudstorage.service.impl.DefaultAuthService;
+import com.cloudstorage.service.AuthService.DefaultAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

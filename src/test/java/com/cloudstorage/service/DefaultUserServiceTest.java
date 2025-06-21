@@ -3,7 +3,7 @@ package com.cloudstorage.service;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;
-import com.cloudstorage.service.impl.DefaultUserService;
+import com.cloudstorage.service.UserService.DefaultUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

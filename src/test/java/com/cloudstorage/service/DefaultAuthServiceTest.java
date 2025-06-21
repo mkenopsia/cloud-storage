@@ -3,7 +3,7 @@
 //import com.cloudstorage.controller.payload.UserPayload;
 //import com.cloudstorage.entity.User;
 //import com.cloudstorage.repository.UserRepository;
-//import com.cloudstorage.service.impl.DefaultAuthService;
+//import com.cloudstorage.service.AuthService.DefaultAuthService;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,6 +1,5 @@
-package com.cloudstorage.service.api;
+package com.cloudstorage.service.AuthService;
 
-import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.controller.payload.UsernamePayload;
 
 public interface AuthService {

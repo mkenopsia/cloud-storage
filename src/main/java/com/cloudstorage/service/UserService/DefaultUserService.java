@@ -1,11 +1,9 @@
-package com.cloudstorage.service.impl;
+package com.cloudstorage.service.UserService;
 
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.repository.UserRepository;
-import com.cloudstorage.service.api.UserService;
 import lombok.AllArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 

@@ -1,15 +1,14 @@
 package com.cloudstorage.config.filter;
 
-import com.cloudstorage.config.UserValidationProperties;
+import com.cloudstorage.config.filter.validator.PayloadValidator;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.controller.payload.UsernamePayload;
-import com.cloudstorage.exceptions.ValidationException;
+import com.cloudstorage.exception.UserCredentialsValidationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,53 +27,31 @@ import java.util.Map;
 
 public class RestLoginFilter extends AbstractAuthenticationProcessingFilter {
 
-    private final UserValidationProperties userValidationProperties;
     private final MessageSource messageSource;
     private final SecurityContextRepository securityContextRepository;
+    private final ObjectMapper objectMapper;
+    private final PayloadValidator payloadValidator;
 
-    public RestLoginFilter(String loginPath, AuthenticationManager authenticationManager, UserValidationProperties userValidationProperties, MessageSource messageSource, SecurityContextRepository securityContextRepository) {
+    public RestLoginFilter(String loginPath,
+                           AuthenticationManager authenticationManager,
+                           MessageSource messageSource,
+                           SecurityContextRepository securityContextRepository,
+                           ObjectMapper objectMapper,
+                           PayloadValidator payloadValidator) {
         super(loginPath);
         setAuthenticationManager(authenticationManager);
-        this.userValidationProperties = userValidationProperties;
         this.messageSource = messageSource;
         this.securityContextRepository = securityContextRepository;
+        this.objectMapper = objectMapper;
+        this.payloadValidator = payloadValidator;
     }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
         try {
-            UserPayload userPayload = new ObjectMapper().readValue(request.getInputStream(), UserPayload.class);
+            UserPayload userPayload = objectMapper.readValue(request.getInputStream(), UserPayload.class);
+            payloadValidator.validate(userPayload);
 
-            if (userPayload.username().isEmpty()) {
-                throw new ValidationException(
-                        "users.errors.blank_username"
-                );
-            }
-            if (userPayload.password().isEmpty()) {
-                throw new ValidationException(
-                        "users.errors.blank_password"
-                );
-            }
-            if (userPayload.username().trim().length() < userValidationProperties.getMinUsernameLength()) {
-                throw new ValidationException(
-                        "users.errors.invalid_username_size_less"
-                );
-            }
-            if (userPayload.username().trim().length() > userValidationProperties.getMaxUsernameLength()) {
-                throw new ValidationException(
-                        "users.errors.invalid_username_size_more"
-                );
-            }
-            if (userPayload.password().trim().length() < userValidationProperties.getMinPasswordLength()) {
-                throw new ValidationException(
-                        "users.errors.invalid_password_size_less"
-                );
-            }
-            if (userPayload.password().trim().length() > userValidationProperties.getMaxPasswordLength()) {
-                throw new ValidationException(
-                        "users.errors.invalid_password_size_more"
-                );
-            }
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(userPayload.username(), userPayload.password()));
         } catch (IOException e) {
@@ -90,7 +67,7 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter {
         response.setStatus(HttpStatus.OK.value());
         response.setContentType("application/json");
         response.getWriter().write(
-                new ObjectMapper().writeValueAsString(
+                objectMapper.writeValueAsString(
                         new UsernamePayload(authResult.getName())
                 )
         );
@@ -102,8 +79,9 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter {
         if (failed instanceof BadCredentialsException || failed instanceof UsernameNotFoundException) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             message = this.messageSource.getMessage(failed.getMessage(), null, "wrong username or password", Locale.getDefault());
-        } else if (failed instanceof ValidationException) {
+        } else if (failed instanceof UserCredentialsValidationException) {
             response.setStatus(HttpStatus.BAD_REQUEST.value());
+            System.out.println(failed.getMessage());
             message = this.messageSource.getMessage(failed.getMessage(), null, "invalid data", Locale.getDefault());
         } else {
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -111,6 +89,6 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter {
         }
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(new ObjectMapper().writeValueAsString(Map.of("message", message)));
+        response.getWriter().write(objectMapper.writeValueAsString(Map.of("message", message)));
     }
 }

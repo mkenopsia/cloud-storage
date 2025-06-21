@@ -1,8 +1,8 @@
 //package com.cloudstorage.controller;
 //
 //import com.cloudstorage.controller.payload.UserPayload;
-//import com.cloudstorage.service.api.AuthService;
-//import com.cloudstorage.service.api.UserService;
+//import com.cloudstorage.service.AuthService.AuthService;
+//import com.cloudstorage.service.UserService.UserService;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.springframework.beans.factory.annotation.Autowired;
