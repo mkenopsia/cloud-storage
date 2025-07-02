@@ -5,10 +5,7 @@ import io.minio.errors.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -24,8 +21,12 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping
-    public ResponseEntity<?> upload(@RequestParam("path") String path,
+    public ResponseEntity<?> uploadFile(@RequestParam("path") String path,
                                     @RequestParam("files") List<MultipartFile> files) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        if(path.isBlank()) {
+            throw new IllegalArgumentException("validation.error.path.blank_path");
+        }
+
         if(files == null || files.isEmpty()) {
             throw new IllegalArgumentException("validation.error.files.no_files_present");
         }
@@ -36,8 +37,27 @@ public class FileController {
             }
         }
 
-        var response = fileService.uploadFile(path, files);
+        var response = this.fileService.uploadFile(path, files);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getFileInfo(@RequestParam("path") String path) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        if(path.isBlank()) {
+            throw new IllegalArgumentException("validation.error.path.blank_path");
+        }
+
+        return ResponseEntity.ok(this.fileService.getFileInfo(path));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<?> deleteFile(@RequestParam("path") String path) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        if(path.isBlank()) {
+            throw new IllegalArgumentException("validation.error.path.blank_path");
+        }
+
+        this.fileService.deleteFile(path);
+        return ResponseEntity.noContent().build();
     }
 }
