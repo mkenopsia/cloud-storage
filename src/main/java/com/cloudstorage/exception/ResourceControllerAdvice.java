@@ -17,7 +17,7 @@ import java.util.Locale;
 
 @ControllerAdvice
 @RequiredArgsConstructor
-public class FileControllerAdvice {
+public class ResourceControllerAdvice {
 
     private final MessageSource messageSource;
 
