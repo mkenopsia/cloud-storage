@@ -2,11 +2,11 @@ package com.cloudstorage.controller;
 
 import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
-import com.cloudstorage.service.ResourceService.ResourceService;
+import com.cloudstorage.service.DirectoryService.DirectoryService;
+import com.cloudstorage.service.ResourceService.FileService;
 import io.minio.errors.*;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StreamUtils;
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -24,7 +25,8 @@ import java.util.List;
 @RequestMapping("/api/resource")
 public class ResourceController {
 
-    private final ResourceService resourceService;
+    private final FileService fileService;
+    private final DirectoryService directoryService;
 
     @PostMapping
     public ResponseEntity<?> uploadFile(@RequestParam("path") String path,
@@ -43,7 +45,7 @@ public class ResourceController {
             }
         }
 
-        var response = this.resourceService.uploadFile(path, files);
+        var response = this.fileService.uploadFile(path, files);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -55,9 +57,9 @@ public class ResourceController {
         }
 
         if (path.charAt(path.length() - 1) == '/') {
-            return ResponseEntity.ok(this.resourceService.getDirectoryInfo(path));
+            return ResponseEntity.ok(this.directoryService.getDirectoryInfo(path));
         } else {
-            return ResponseEntity.ok(this.resourceService.getFileInfo(path));
+            return ResponseEntity.ok(this.fileService.getFileInfo(path));
         }
     }
 
@@ -68,9 +70,9 @@ public class ResourceController {
         }
 
         if (path.charAt(path.length() - 1) == '/') {
-            this.resourceService.deleteDirectory(path);
+            this.directoryService.deleteDirectory(path);
         } else {
-            this.resourceService.deleteFile(path);
+            this.fileService.deleteFile(path);
         }
 
         return ResponseEntity.noContent().build();
@@ -84,10 +86,10 @@ public class ResourceController {
 
         if (path.endsWith("/")) {
             response.setContentType("application/zip");
-            this.resourceService.downloadDirectory(path, response.getOutputStream(), response);
+            this.directoryService.downloadDirectory(path, response.getOutputStream(), response);
         } else {
             response.setContentType("application/octet-stream");
-            StreamUtils.copy(this.resourceService.downloadFile(path, response), response.getOutputStream());
+            StreamUtils.copy(this.fileService.downloadFile(path, response), response.getOutputStream());
         }
 
         response.setStatus(HttpStatus.OK.value());
@@ -96,16 +98,16 @@ public class ResourceController {
 
     @GetMapping("/rename")
     public ResponseEntity<?> renameResource(@RequestParam("oldName") String oldName,
-                                            @RequestParam("newName") String newName) throws NoSuchFileException {
+                                            @RequestParam("newName") String newName) throws NoSuchFileException, FileAlreadyExistsException {
         if (oldName.isBlank() || newName.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
 
         if (!oldName.endsWith("/") && !newName.endsWith("/")) {
-            FilePayload filePayload = this.resourceService.renameFile(oldName, newName);
+            FilePayload filePayload = this.fileService.renameFile(oldName, newName);
             return ResponseEntity.ok(filePayload);
         } else if (oldName.endsWith("/") && newName.endsWith("/")) {
-            DirectoryPayload directoryPayload = this.resourceService.renameDirectory(oldName, newName);
+            DirectoryPayload directoryPayload = this.directoryService.renameDirectory(oldName, newName);
             return ResponseEntity.ok(directoryPayload);
         } else {
             throw new UnsupportedOperationException("validation.error.logic.invalid_operation"); //TODO: сделать хендлер
@@ -114,19 +116,28 @@ public class ResourceController {
 
     @GetMapping("/move")
     public ResponseEntity<?> moveResource(@RequestParam("from") String from,
-                                          @RequestParam("to") String to) throws NoSuchFileException {
+                                          @RequestParam("to") String to) throws NoSuchFileException, FileAlreadyExistsException {
         if (from.isBlank() || to.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
 
         if (from.endsWith("/") && to.endsWith("/")) {
-            DirectoryPayload directoryPayload = this.resourceService.moveDirectory(from, to);
+            DirectoryPayload directoryPayload = this.directoryService.moveDirectory(from, to);
             return ResponseEntity.ok(directoryPayload);
         } else if(!from.endsWith("/") && to.endsWith("/")) {
-            FilePayload filePayload = this.resourceService.moveFile(from, to);
+            FilePayload filePayload = this.fileService.moveFile(from, to);
             return ResponseEntity.ok(filePayload);
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchResources(@RequestParam("query") String query) {
+        if (query.isBlank()) {
+            throw new IllegalArgumentException("validation.error.query.blank_query");
+        }
+
+        return ResponseEntity.ok(this.fileService.findResources(query));
     }
 }

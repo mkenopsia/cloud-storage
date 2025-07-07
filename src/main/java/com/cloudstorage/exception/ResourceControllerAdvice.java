@@ -45,6 +45,14 @@ public class ResourceControllerAdvice {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
+    @ExceptionHandler(UnsupportedOperationException.class)
+    private ResponseEntity<ProblemDetail> handleResourceAlreadyExistsCase(UnsupportedOperationException exception, Locale locale) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setProperty("message",
+                this.messageSource.getMessage(exception.getMessage(), null, "error", locale));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     private ResponseEntity<ProblemDetail> handleBlankFilesCase(IllegalArgumentException exception, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
