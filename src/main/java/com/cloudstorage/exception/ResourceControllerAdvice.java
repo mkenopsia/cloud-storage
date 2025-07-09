@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MultipartException;
 
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.util.Locale;
 
 @ControllerAdvice
@@ -37,45 +36,21 @@ public class ResourceControllerAdvice {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
     }
 
-    @ExceptionHandler(NoSuchFileException.class)
-    private ResponseEntity<ProblemDetail> handleFileNotFoundCase(NoSuchFileException exception, Locale locale) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-        problemDetail.setProperty("message",
-                this.messageSource.getMessage(exception.getMessage(), null, "error", locale));
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
-    }
-
-    @ExceptionHandler(UnsupportedOperationException.class)
-    private ResponseEntity<ProblemDetail> handleResourceAlreadyExistsCase(UnsupportedOperationException exception, Locale locale) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-        problemDetail.setProperty("message",
-                this.messageSource.getMessage(exception.getMessage(), null, "error", locale));
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    private ResponseEntity<ProblemDetail> handleBlankFilesCase(IllegalArgumentException exception, Locale locale) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setProperty("message",
-                this.messageSource.getMessage(exception.getMessage(), null, "error", locale));
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
-    }
-
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<String> handleFileSizeLimitExceeded() {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body("Размер загружаемых файлов слишком большой"); //TODO: потестить - надо или нет.. и расхардкодить
+                .body("validation.error.files.too_large_file");
     }
 
     @ExceptionHandler(TypeMismatchException.class)
     public ResponseEntity<String> handleTypeMismatch() {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Неверный тип данных для параметра 'files'");
+                .body("validation.error.files.mismatch_file_type");
     }
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<String> handleNullFiles() {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Файлы не были переданы");
+                .body("validation.error.files.no_files_present");
     }
 }

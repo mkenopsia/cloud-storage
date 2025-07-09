@@ -4,11 +4,11 @@ import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.service.UserService.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +24,10 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/auth/sign-up")
-    public ResponseEntity<?> register(@RequestBody @Valid UserPayload userPayload,
+    public ResponseEntity<?> register(@Valid @RequestBody UserPayload userPayload,
                                       BindingResult bindingResult) throws BindException {
         if(bindingResult.hasErrors()) {
+            System.out.println(bindingResult.getAllErrors().stream().map(ObjectError::getDefaultMessage).toList());
             throw new BindException(bindingResult);
         }
 

@@ -24,7 +24,9 @@ public class AuthControllerAdvice {
                 HttpStatus.BAD_REQUEST,
                 this.messageSource.getMessage("users.errors.invalid_input", null, "users.errors.invalid_input", locale));
 
-        problemDetail.setProperty("message", exception.getAllErrors().stream().map(ObjectError::getDefaultMessage));
+        problemDetail.setProperty("errors", exception.getAllErrors().stream()
+                .map(error -> messageSource.getMessage(error.getDefaultMessage(), null, "error", locale))
+                .toList());
         return ResponseEntity.badRequest().body(problemDetail);
     }
 
