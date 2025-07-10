@@ -2,6 +2,7 @@ package com.cloudstorage.service.DirectoryService;
 
 import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
+import com.cloudstorage.service.AuthService.AuthService;
 import com.cloudstorage.service.ResourceService.FileService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
@@ -32,13 +33,16 @@ public class DefaultDirectoryService implements DirectoryService {
 
     private final MinioClient minioClient;
     private final FileService fileService;
+    private final AuthService authService;
 
     @Value("${minio.bucket.name}")
     private String bucketName;
 
     @Override
     public DirectoryPayload getDirectoryInfo(String path) throws NoSuchFileException {
-        if (!isDirectoryExists(path)) {
+        String fullDirectoryPath = getUserPrefix() + path;
+
+        if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
@@ -78,14 +82,16 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public void deleteDirectory(String path) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (!isDirectoryExists(path)) {
+        String fullDirectoryPath = getUserPrefix() + path;
+
+        if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
         Iterable<Result<Item>> results = this.minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(bucketName)
-                        .prefix(path)
+                        .prefix(fullDirectoryPath)
                         .recursive(true)
                         .build()
         );
@@ -102,23 +108,25 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public void downloadDirectory(String path, ServletOutputStream outputStream, HttpServletResponse response) throws NoSuchFileException {
-        if (!isDirectoryExists(path)) {
+        String fullDirectoryPath = getUserPrefix() + path;
+
+        if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + getDirectoryName(path) + "\"");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + getDirectoryName(fullDirectoryPath) + "\"");
 
         try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
             Iterable<Result<Item>> results = this.minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
-                            .prefix(path)
+                            .prefix(fullDirectoryPath)
                             .recursive(true)
                             .build()
             );
 
             for (var result : results) {
-                String zipEntryName = result.get().objectName().substring(path.length());
+                String zipEntryName = result.get().objectName().substring(fullDirectoryPath.length());
 
                 zipOut.putNextEntry(new ZipEntry(zipEntryName));
 
@@ -144,11 +152,14 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public DirectoryPayload renameDirectory(String oldDirectoryName, String newDirectoryName) throws NoSuchFileException {
-        if (!isDirectoryExists(oldDirectoryName)) {
+        String fullOldDirectoryPath = getUserPrefix() + oldDirectoryName;
+        String fullNewDirectoryPath = getUserPrefix() + newDirectoryName;
+
+        if (!isDirectoryExists(fullOldDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
-        if (isDirectoryExists(newDirectoryName)) {
+        if (isDirectoryExists(fullNewDirectoryPath)) {
             throw new UnsupportedOperationException("minio.directory.error.already_exists");
         }
 
@@ -156,14 +167,14 @@ public class DefaultDirectoryService implements DirectoryService {
             Iterable<Result<Item>> results = this.minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
-                            .prefix(oldDirectoryName)
+                            .prefix(fullOldDirectoryPath)
                             .recursive(true)
                             .build()
             );
 
             for (var result : results) {
                 String oldFileName = result.get().objectName();
-                String newFileName = newDirectoryName + oldFileName.substring(oldDirectoryName.length());
+                String newFileName = fullNewDirectoryPath + oldFileName.substring(fullOldDirectoryPath.length());
 
                 this.fileService.renameFile(oldFileName, newFileName);
             }
@@ -176,7 +187,10 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public DirectoryPayload moveDirectory(String fromDirectory, String toDirectory) throws NoSuchFileException {
-        if (!isDirectoryExists(fromDirectory)) {
+        String fullFromDirectoryPath = getUserPrefix() + fromDirectory;
+        String fullToDirectoryPath = getUserPrefix() + toDirectory;
+
+        if (!isDirectoryExists(fullFromDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
@@ -184,14 +198,14 @@ public class DefaultDirectoryService implements DirectoryService {
             Iterable<Result<Item>> results = this.minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
-                            .prefix(fromDirectory)
+                            .prefix(fullFromDirectoryPath)
                             .recursive(true)
                             .build()
             );
 
             for (var result : results) {
                 String oldFileName = result.get().objectName();
-                String newDirectoryName = toDirectory + cutInnerDirectoryPath(oldFileName, fromDirectory);
+                String newDirectoryName = fullToDirectoryPath + cutInnerDirectoryPath(oldFileName, fullFromDirectoryPath);
 
                 this.fileService.moveFile(oldFileName, newDirectoryName);
             }
@@ -199,13 +213,11 @@ public class DefaultDirectoryService implements DirectoryService {
             throw new RuntimeException();
         }
 
-        return new DirectoryPayload(getDirectoryPathAfterMoving(toDirectory), getDirectoryName(fromDirectory), "DIRECTORY");
+        return new DirectoryPayload(getDirectoryPathAfterMoving(toDirectory), getDirectoryName(toDirectory), "DIRECTORY");
     }
 
     private String getDirectoryPathAfterMoving(String toDirectory) {
-        if (toDirectory.equals("/")) return "/";
-
-        return getDirectoryPath(toDirectory) + getDirectoryName(toDirectory) + "/";
+        return ResourcePathParseUtils.getPathWithoutUserPrefix(toDirectory) + getDirectoryName(toDirectory) + "/";
     }
 
     /**
@@ -220,7 +232,9 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public List<FilePayload> getDirectoryContent(String directoryPath) throws NoSuchFileException {
-        if (!isDirectoryExists(directoryPath)) {
+        String fullDirectoryPath = getUserPrefix() + directoryPath;
+
+        if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
@@ -230,12 +244,12 @@ public class DefaultDirectoryService implements DirectoryService {
             for (var result : this.minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
-                            .prefix(directoryPath)
+                            .prefix(fullDirectoryPath)
                             .build()
             )) {
                 Item currItem = result.get();
                 resources.add(new FilePayload(
-                        getDirectoryPath(currItem.objectName()),
+                        ResourcePathParseUtils.getPathWithoutUserPrefix(currItem.objectName()),
                         getDirectoryName(currItem.objectName()),
                         currItem.size(), (!currItem.objectName().endsWith("/")) ? "FILE" : "DIRECTORY")
                 );
@@ -249,11 +263,13 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public DirectoryPayload createDirectory(String directoryPath) throws NoSuchFileException, UnsupportedOperationException {
-        if (!isDirectoryInRoot(directoryPath) && !isDirectoryExists(getDirectoryPath(directoryPath))) {
+        String fullDirectoryPath = getUserPrefix() + directoryPath;
+
+        if (!isDirectoryInRoot(fullDirectoryPath) && !isDirectoryExists(getDirectoryPath(fullDirectoryPath))) {
             throw new NoSuchFileException("minio.directory.error.parent_directory_not_exists");
         }
 
-        if (isDirectoryExists(directoryPath)) {
+        if (isDirectoryExists(fullDirectoryPath)) {
             throw new UnsupportedOperationException("minio.directory.error.already_exists");
         }
 
@@ -261,7 +277,7 @@ public class DefaultDirectoryService implements DirectoryService {
             this.minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(directoryPath)
+                            .object(fullDirectoryPath)
                             .stream(InputStream.nullInputStream(), 0, -1)
                             .build()
             );
@@ -276,5 +292,9 @@ public class DefaultDirectoryService implements DirectoryService {
 
     private boolean isDirectoryInRoot(String directoryPath) {
         return directoryPath.split("/").length <= 1;
+    }
+
+    private String getUserPrefix() {
+        return "user-%d-files/".formatted(this.authService.getUserIdFromSession());
     }
 }

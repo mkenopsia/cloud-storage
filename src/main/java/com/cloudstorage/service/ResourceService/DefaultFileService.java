@@ -1,12 +1,11 @@
 package com.cloudstorage.service.ResourceService;
 
-import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
+import com.cloudstorage.service.AuthService.AuthService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,17 +20,16 @@ import java.nio.file.NoSuchFileException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class DefaultFileService implements FileService {
 
     private final MinioClient minioClient;
+    private final AuthService authService;
 
     @Value("${minio.bucket.name}")
     private String bucketName;
@@ -39,8 +37,9 @@ public class DefaultFileService implements FileService {
     @Override
     public List<FilePayload> uploadFile(String path, List<MultipartFile> files) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         List<FilePayload> uploadedFiles = new ArrayList<>();
+
         for (var file : files) {
-            String fullFileName = path + file.getOriginalFilename();
+            String fullFileName = getUserPrefix() + path + file.getOriginalFilename();
 
             if (isFileExists(fullFileName)) {
                 throw new FileAlreadyExistsException(file.getOriginalFilename(), path, "minio.file.error.already_exists");
@@ -59,6 +58,10 @@ public class DefaultFileService implements FileService {
         }
 
         return uploadedFiles;
+    }
+
+    private String getUserPrefix() {
+        return "user-%d-files/".formatted(this.authService.getUserIdFromSession());
     }
 
     private FilePayload createFilePayload(String path, String name, Long size, String type) {
@@ -81,13 +84,15 @@ public class DefaultFileService implements FileService {
 
     @Override
     public FilePayload getFileInfo(String fullFilePath) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (!isFileExists(fullFilePath)) {
+        String fullFileName = getUserPrefix() + fullFilePath;
+
+        if (!isFileExists(fullFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
         var fileInfo = this.minioClient.statObject(StatObjectArgs.builder()
                 .bucket(bucketName)
-                .object(fullFilePath)
+                .object(fullFileName)
                 .build());
 
         return createFilePayload(ResourcePathParseUtils.getFilePath(fullFilePath),
@@ -98,43 +103,50 @@ public class DefaultFileService implements FileService {
 
     @Override
     public void deleteFile(String fullFilePath) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (!isFileExists(fullFilePath)) {
+        String fullFileName = getUserPrefix() + fullFilePath;
+
+        if (!isFileExists(fullFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
         this.minioClient.removeObject(RemoveObjectArgs.builder()
                 .bucket(bucketName)
-                .object(fullFilePath)
+                .object(fullFileName)
                 .build()
         );
     }
 
     @Override
     public InputStream downloadFile(String path, HttpServletResponse response) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (!isFileExists(path)) {
+        String fullFileName = getUserPrefix() + path;
+
+        if (!isFileExists(fullFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + ResourcePathParseUtils.getFileName(path) + "\"");
+                "attachment; filename=\"" + ResourcePathParseUtils.getFileName(fullFileName) + "\"");
 
         return this.minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(bucketName)
-                        .object(path)
+                        .object(fullFileName)
                         .build()
         );
     }
 
     @Override
     public FilePayload renameFile(String oldName, String newName) throws NoSuchFileException, FileAlreadyExistsException {
-        if (!isFileExists(oldName)) {
+        String fullOldFileName = getUserPrefix() + oldName;
+        String fullNewFileName = getUserPrefix() + newName;
+
+        if (!isFileExists(fullOldFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
-        if (isFileExists(newName)) {
-            throw new FileAlreadyExistsException(newName,
-                    ResourcePathParseUtils.getFilePath(newName),
+        if (isFileExists(fullNewFileName)) {
+            throw new FileAlreadyExistsException(fullNewFileName,
+                    ResourcePathParseUtils.getFilePath(fullNewFileName),
                     "minio.file.error.already_exists");
         }
 
@@ -144,23 +156,23 @@ public class DefaultFileService implements FileService {
             InputStream oldFile = this.minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(oldName)
+                            .object(fullOldFileName)
                             .build()
             );
 
             StatObjectResponse oldFileInfo = this.minioClient.statObject(
                     StatObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(oldName)
+                            .object(fullOldFileName)
                             .build()
             );
 
-            this.deleteFile(oldName);
+            this.deleteFile(fullOldFileName);
 
             this.minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(newName)
+                            .object(fullNewFileName)
                             .stream(oldFile, oldFileInfo.size(), -1)
                             .contentType(oldFileInfo.contentType())
                             .build()
@@ -188,10 +200,13 @@ public class DefaultFileService implements FileService {
     public List<FilePayload> findResources(String query) {
         List<FilePayload> resources = new ArrayList<>();
 
+        Map<String, Boolean> foundDirectories = new HashMap<>();
+
         try {
             Iterable<Result<Item>> results = this.minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
+                            .prefix(getUserPrefix())
                             .recursive(true)
                             .build()
             );
@@ -201,7 +216,7 @@ public class DefaultFileService implements FileService {
 
                 if (!isDirectory(item.objectName()) && ResourcePathParseUtils.getFileName(item.objectName()).contains(query)) {
                     resources.add(this.createFilePayload(
-                            ResourcePathParseUtils.getFilePath(item.objectName()),
+                            ResourcePathParseUtils.getPathWithoutUserPrefix(item.objectName()),
                             ResourcePathParseUtils.getFileName(item.objectName()),
                             item.size(),
                             "FILE"

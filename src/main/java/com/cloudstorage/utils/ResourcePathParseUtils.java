@@ -20,4 +20,26 @@ public class ResourcePathParseUtils {
                 .limit(parts.length - 1)
                 .collect(Collectors.joining("/")) + "/";
     }
+
+    public static String getPathWithoutUserPrefix(String fullFilePath) {
+        String[] parts = fullFilePath.split("/");
+
+        if(parts.length <= 1) return "/";
+
+        return Arrays.stream(parts)
+                .skip(1)
+                .limit(parts.length - 2)
+                .collect(Collectors.joining("/", "", "/"));
+    }
+
+    public static String getDirectoryPathWithoutUserPrefix(String fullDirectoryPath) {
+        String[] parts = fullDirectoryPath.split("/");
+
+        if(parts.length <= 2) return "/";
+
+        return Arrays.stream(parts)
+                .skip(1)
+                .limit(parts.length - 2)
+                .collect(Collectors.joining("/", "", "/"));
+    }
 }
