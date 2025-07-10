@@ -33,6 +33,11 @@ public class DefaultUserService implements UserService {
     }
 
     @Override
+    public Optional<User> findByUsername(String username) {
+        return this.userRepository.findByUsername(username);
+    }
+
+    @Override
     public void deleteById(Integer id) {
         this.userRepository.deleteById(id);
     }

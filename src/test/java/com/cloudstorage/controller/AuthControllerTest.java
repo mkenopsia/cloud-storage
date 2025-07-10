@@ -1,177 +1,108 @@
-//package com.cloudstorage.controller;
-//
-//import com.cloudstorage.controller.payload.UserPayload;
-//import com.cloudstorage.service.AuthService.AuthService;
-//import com.cloudstorage.service.UserService.UserService;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-//import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-//import org.springframework.context.MessageSource;
-//import org.springframework.http.MediaType;
-//import org.springframework.test.context.bean.override.mockito.MockitoBean;
-//import org.springframework.test.web.servlet.MockMvc;
-//
-//import static org.mockito.Mockito.doThrow;
-//import static org.mockito.Mockito.verify;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-//
-//@WebMvcTest(AuthController.class)
-//@AutoConfigureMockMvc(addFilters = false)
-//class AuthControllerTest {
-//
-//    @Autowired
-//    private MockMvc mockMvc;
-//
-//    @MockitoBean
-//    private MessageSource messageSource;
-//
-//    @MockitoBean
-//    private UserService userService;
-//
-//    @MockitoBean
-//    private AuthService authService;
-//
-//    private UserPayload userPayload;
-//
-//    @BeforeEach
-//    void setUp() {
-//        userPayload = new UserPayload("user_1", "password");
-//    }
-//
-//    @Test
-//    void testRegister_SuccessfulRegister() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-up")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content("""
-//                        {
-//                              "username": "user_1",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isCreated())
-//                .andExpect(jsonPath("$.username").value("user_1"));
-//
-//
-//        verify(userService).save(userPayload);
-//    }
-//
-//    @Test
-//    void testRegister_UserAlreadyExists() throws Exception {
-//        doThrow(new IllegalStateException("users.errors.user_already_exists")).when(userService).save(userPayload);
-//
-//
-//        mockMvc.perform(post("/api/auth/sign-up")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "user_1",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isConflict());
-//    }
-//
-//    @Test
-//    void testRegister_NameValidationError() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-up")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "u",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.message").isNotEmpty());
-//    }
-//
-//    @Test
-//    void testRegister_PasswordValidationError() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-up")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "user",
-//                              "password": "pwd"
-//                        }
-//                        """))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.message").isNotEmpty());
-//    }
-//
-//    @Test
-//    void testLogin_SuccessfulLogin() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-in")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "user_1",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.username").value("user_1"));
-//
-//
-//        verify(authService).loginUser(userPayload);
-//    }
-//
-//    @Test
-//    void testLogin_NameValidationError() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-in")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "u",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.message").isNotEmpty());
-//    }
-//
-//    @Test
-//    void testLogin_PasswordValidationError() throws Exception {
-//
-//        mockMvc.perform(post("/api/auth/sign-in")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "user",
-//                              "password": "pwd"
-//                        }
-//                        """))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.message").isNotEmpty());
-//    }
-//
-//    @Test
-//    void testLogin_InvalidData() throws Exception {
-//        doThrow(new IllegalArgumentException("users.errors.invalid_password")).when(authService).loginUser(userPayload);
-//
-//
-//        mockMvc.perform(post("/api/auth/sign-in")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                              "username": "user_1",
-//                              "password": "password"
-//                        }
-//                        """))
-//                .andExpect(status().isUnauthorized());
-//    }
-//
-//    @Test
-//    void testLogout_SuccessLogout() throws Exception {
-//        mockMvc.perform(post("/api/auth/sign-out")).andExpect(status().isNoContent());
-//    }
-//}
+package com.cloudstorage.controller;
+
+import com.cloudstorage.controller.payload.UserPayload;
+import com.cloudstorage.service.DirectoryService.DirectoryService;
+import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.UserService.UserService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.MessageSource;
+import org.springframework.http.MediaType;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import java.util.Locale;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+
+@WebMvcTest(AuthController.class)
+class AuthControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private MessageSource messageSource;
+
+    @MockitoBean
+    private SecurityFilterChain securityFilterChain;
+
+    @MockitoBean
+    private FileService fileService;
+
+    @MockitoBean
+    private DirectoryService directoryService;
+
+    @MockitoBean
+    private UserService userService;
+
+    @Test
+    void testRegistration_successfulRegistration() throws Exception {
+        // Given
+        UserPayload userPayload = new UserPayload("valid_username", "valid_password");
+
+        // When + then
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "username": "valid_username",
+                                    "password": "valid_password"
+                                }
+                                """)).andExpect(status().isCreated())
+//                .andDo(print())
+                .andExpect(content().string(containsString("valid_username")));
+
+    }
+
+    @Test
+    void testRegistration_badRequestDueToInvalidUsername() throws Exception {
+        // Given
+        UserPayload userPayload = new UserPayload("valid_username", "valid_password");
+
+        // When + then
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "username": "ll",
+                                    "password": "valid_password"
+                                }
+                                """)).andExpect(status().isBadRequest())
+//                .andDo(print())
+                .andExpect(content().string(
+                        containsString(this.messageSource.getMessage(
+                                "users.errors.invalid_input", null, Locale.getDefault()))));
+
+    }
+
+    @Test
+    void testRegistration_badRequestDueToInvalidPassword() throws Exception {
+        // Given
+        UserPayload userPayload = new UserPayload("valid_username", "valid_password");
+
+        // When + then
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "username": "valid_username",
+                                    "password": "lol"
+                                }
+                                """)).andExpect(status().isBadRequest())
+//                .andDo(print())
+                .andExpect(content().string(
+                        containsString(this.messageSource.getMessage(
+                                "users.errors.invalid_input", null, Locale.getDefault()))));
+
+    }
+}

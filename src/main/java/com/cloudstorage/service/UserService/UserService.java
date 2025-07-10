@@ -12,6 +12,8 @@ public interface UserService {
 
     Optional<User> findById(Integer id);
 
+    Optional<User> findByUsername(String username);
+
     void deleteById(Integer id);
 
     boolean isAlreadyExists(UserPayload user);
