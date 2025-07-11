@@ -8,10 +8,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data # TODO: потом перенести в volumes docker'а
+#    volumes:
+#      - postgres_/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 2s
       timeout: 2s
       retries: 5
@@ -36,7 +36,7 @@ services:
 
   app:
     build: .
-    container_name: cloud_storage
+    container_name: cloud-storage-backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,4 +52,20 @@ services:
 #      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
 #      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "8080:8080"
+      - "8081:8081"
+
+  frontend:
+    build:
+      context: ./cloud-storage-frontend/.
+      dockerfile: Dockerfile
+    container_name: cloud-storage-frontend
+    ports:
+      - "8080:80"
+#
+#volumes:
+#  postgres_:
+#    driver: local
+#    driver_opts:
+#      type: none
+#      device: /dev/null
+#      o: bind

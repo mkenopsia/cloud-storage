@@ -2,8 +2,10 @@ package com.cloudstorage.service.DirectoryService;
 
 import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
+import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.service.AuthService.AuthService;
 import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.UserService.UserService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
 import io.minio.errors.*;
@@ -34,6 +36,7 @@ public class DefaultDirectoryService implements DirectoryService {
     private final MinioClient minioClient;
     private final FileService fileService;
     private final AuthService authService;
+    private final UserService userService;
 
     @Value("${minio.bucket.name}")
     private String bucketName;
@@ -288,6 +291,24 @@ public class DefaultDirectoryService implements DirectoryService {
         return new DirectoryPayload(getDirectoryPath(directoryPath),
                 getDirectoryName(directoryPath),
                 "DIRECTORY");
+    }
+
+    @Override
+    public void createRootDirectory(UserPayload userPayload) throws NoSuchFileException {
+        Integer userId = this.userService.findByUsername(userPayload.username()).get().getId();
+        String userRootDirectoryName = "user-%d-files/".formatted(userId);
+
+        try {
+            this.minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(userRootDirectoryName)
+                            .stream(InputStream.nullInputStream(), 0, -1)
+                            .build()
+            );
+        } catch (Exception exception) {
+            throw new RuntimeException();
+        }
     }
 
     private boolean isDirectoryInRoot(String directoryPath) {

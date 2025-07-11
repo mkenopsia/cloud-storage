@@ -2,6 +2,7 @@ package com.cloudstorage.service.DirectoryService;
 
 import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
+import com.cloudstorage.controller.payload.UserPayload;
 import io.minio.errors.*;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,4 +28,6 @@ public interface DirectoryService {
     List<FilePayload> getDirectoryContent(String path) throws NoSuchFileException;
 
     DirectoryPayload createDirectory(String path) throws NoSuchFileException, UnsupportedOperationException;
+
+    void createRootDirectory(UserPayload userPayload) throws NoSuchFileException;
 }
