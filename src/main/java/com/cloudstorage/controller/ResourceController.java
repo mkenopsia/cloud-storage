@@ -5,6 +5,13 @@ import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
 import com.cloudstorage.service.ResourceService.FileService;
 import io.minio.errors.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,13 +30,26 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/resource")
+@Tag(name = "Контроллер файлов", description = "Обеспечивает логику работы с ресурсами (файлами и папками)")
 public class ResourceController {
 
     private final FileService fileService;
     private final DirectoryService directoryService;
 
     @PostMapping
-    public ResponseEntity<?> uploadFile(@RequestParam("path") String path,
+    @Operation(summary = "Загрузить ресурс (файл или папку)", responses = {
+            @ApiResponse(responseCode = "201", description = "Успех", content = @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = FilePayload.class))
+            )),
+            @ApiResponse(responseCode = "400", description = "Невалидное тело запроса", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Ресурс уже существует", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> uploadFile(@Parameter(name = "path", description = "Путь до директории для загрузки, заканчивающийся на /", example = "folder1/folder2/", required = true)
+                                        @RequestParam("path") String path,
+                                        @Parameter(name = "files", description = "Файлы для загрузки из file input в формате MultipartFile", required = true)
                                         @RequestParam("files") List<MultipartFile> files) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
@@ -51,8 +71,20 @@ public class ResourceController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getResourceInfo(@RequestParam("path") String path) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (path.isBlank()) {
+    @Operation(summary = "Получить информацию о ресурсе (файле или папке)", responses = {
+            @ApiResponse(responseCode = "200", description = "Успех", content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = FilePayload.class)
+            )),
+            @ApiResponse(responseCode = "400", description = "Невалидный или отсутствующий путь", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ресурс не найден", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> getResourceInfo(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/", required = true)
+                                             @RequestParam("path") String path
+    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        if (path.isBlank()) { //TODO убрать колбасы из ошибок
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
 
@@ -64,7 +96,16 @@ public class ResourceController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteResource(@RequestParam("path") String path) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    @Operation(summary = "Удалить ресурс (файл или папку)", responses = {
+            @ApiResponse(responseCode = "204", description = "Успех", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Невалидный или отсутствующий путь", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ресурс не найден", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> deleteResource(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/file.txt", required = true)
+                                            @RequestParam("path") String path
+    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -79,7 +120,18 @@ public class ResourceController {
     }
 
     @GetMapping("/download")
-    public void downloadResource(@RequestParam("path") String path, HttpServletResponse response) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    @Operation(summary = "Скачать ресурс (файл или папку (в формате zip))", responses = {
+            @ApiResponse(responseCode = "200", description = "Успех", content = @Content(
+                    mediaType = "application/octet-stream | application/zip"
+            )),
+            @ApiResponse(responseCode = "400", description = "Невалидный или отсутствующий путь", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ресурс не найден", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public void downloadResource(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/file.txt", required = true)
+                                 @RequestParam("path") String path, HttpServletResponse response
+    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -97,8 +149,20 @@ public class ResourceController {
     }
 
     @GetMapping("/rename")
-    public ResponseEntity<?> renameResource(@RequestParam("oldName") String oldName,
-                                            @RequestParam("newName") String newName) throws NoSuchFileException, FileAlreadyExistsException {
+    @Operation(summary = "Переименовать ресурс (файл или папку)", responses = {
+            @ApiResponse(responseCode = "200", description = "Успех", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Невалидный или отсутствующий путь", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ресурс не найден", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Ресурс по новому указанному пути уже существует", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> renameResource(
+            @Parameter(name = "oldName", description = "Путь до ресурса для переименования", example = "folder1/folder2/file.txt", required = true)
+            @RequestParam("oldName") String oldName,
+            @Parameter(name = "newName", description = "Новое имя ресурса", example = "folder1/folder2/newFile.txt", required = true)
+            @RequestParam("newName") String newName
+    ) throws NoSuchFileException, FileAlreadyExistsException {
         if (oldName.isBlank() || newName.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -115,8 +179,20 @@ public class ResourceController {
     }
 
     @GetMapping("/move")
-    public ResponseEntity<?> moveResource(@RequestParam("from") String from,
-                                          @RequestParam("to") String to) throws NoSuchFileException, FileAlreadyExistsException {
+    @Operation(summary = "Переместить ресурс (файл или папку)", responses = {
+            @ApiResponse(responseCode = "200", description = "Успех", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Невалидный или отсутствующий путь", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ресурс не найден", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Ресурс по новому указанному пути уже существует", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> moveResource(
+            @Parameter(name = "from", description = "Путь до ресурса для перемещения", example = "folder1/folder2/file.txt", required = true)
+            @RequestParam("from") String from,
+            @Parameter(name = "to", description = "Новый путь ресурса", example = "folder1/file.txt", required = true)
+            @RequestParam("to") String to
+    ) throws NoSuchFileException, FileAlreadyExistsException {
         if (from.isBlank() || to.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -124,7 +200,7 @@ public class ResourceController {
         if (from.endsWith("/") && to.endsWith("/")) {
             DirectoryPayload directoryPayload = this.directoryService.moveDirectory(from, to);
             return ResponseEntity.ok(directoryPayload);
-        } else if(!from.endsWith("/") && to.endsWith("/")) {
+        } else if (!from.endsWith("/") && to.endsWith("/")) {
             FilePayload filePayload = this.fileService.moveFile(from, to);
             return ResponseEntity.ok(filePayload);
         }
@@ -133,7 +209,18 @@ public class ResourceController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> searchResources(@RequestParam("query") String query) {
+    @Operation(summary = "Поиск по файлам", responses = {
+            @ApiResponse(responseCode = "200", description = "Успех", content = @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = FilePayload.class))
+            )),
+            @ApiResponse(responseCode = "400", description = "Невалидное тело запроса", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
+    })
+    public ResponseEntity<?> searchResources(
+            @Parameter(name = "query", description = "Поисковый запрос в URL-encoded формате", example = "file2", required = true)
+            @RequestParam("query") String query) {
         if (query.isBlank()) {
             throw new IllegalArgumentException("validation.error.query.blank_query");
         }

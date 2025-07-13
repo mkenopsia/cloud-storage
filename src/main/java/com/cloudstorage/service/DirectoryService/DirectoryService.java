@@ -29,5 +29,5 @@ public interface DirectoryService {
 
     DirectoryPayload createDirectory(String path) throws NoSuchFileException, UnsupportedOperationException;
 
-    void createRootDirectory(UserPayload userPayload) throws NoSuchFileException;
+    void createUserRootDirectory(UserPayload userPayload) throws NoSuchFileException;
 }

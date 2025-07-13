@@ -235,7 +235,7 @@ public class DefaultDirectoryService implements DirectoryService {
 
     @Override
     public List<FilePayload> getDirectoryContent(String directoryPath) throws NoSuchFileException {
-        String fullDirectoryPath = getUserPrefix() + directoryPath;
+        String fullDirectoryPath = getUserPrefix() + ((directoryPath.equals("/")) ? "" : directoryPath);
 
         if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
@@ -251,6 +251,8 @@ public class DefaultDirectoryService implements DirectoryService {
                             .build()
             )) {
                 Item currItem = result.get();
+                if(currItem.objectName().equals(fullDirectoryPath)) continue;
+
                 resources.add(new FilePayload(
                         ResourcePathParseUtils.getPathWithoutUserPrefix(currItem.objectName()),
                         getDirectoryName(currItem.objectName()),
@@ -294,7 +296,7 @@ public class DefaultDirectoryService implements DirectoryService {
     }
 
     @Override
-    public void createRootDirectory(UserPayload userPayload) throws NoSuchFileException {
+    public void createUserRootDirectory(UserPayload userPayload) throws NoSuchFileException {
         Integer userId = this.userService.findByUsername(userPayload.username()).get().getId();
         String userRootDirectoryName = "user-%d-files/".formatted(userId);
 

@@ -20,8 +20,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
-class AuthControllerTest {
+@WebMvcTest(RegisterController.class)
+class RegisterControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

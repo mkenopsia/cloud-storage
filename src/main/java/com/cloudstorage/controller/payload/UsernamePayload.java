@@ -1,4 +1,9 @@
 package com.cloudstorage.controller.payload;
 
-public record UsernamePayload(String username) {
-}
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Имя созданного поьзователя")
+public record UsernamePayload(
+        @Schema(description = "Имя пользователя", example = "valid_username")
+        String username
+) {}

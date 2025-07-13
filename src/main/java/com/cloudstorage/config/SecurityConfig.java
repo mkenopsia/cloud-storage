@@ -57,9 +57,14 @@ public class SecurityConfig implements WebMvcConfigurer {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/auth/sign-up", "/api/auth/sign-in").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(request ->
+                        request.requestMatchers(
+                                        "/api/auth/sign-up",
+                                        "/api/auth/sign-in",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**"
+                                ).permitAll()
+                                .anyRequest().authenticated())
                 .addFilterBefore(restLoginFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(httpSecurityExceptionHandlingConfigurer ->
                         httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint(authEntryPoint))
