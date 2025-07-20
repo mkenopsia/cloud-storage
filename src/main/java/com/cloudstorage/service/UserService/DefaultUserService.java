@@ -17,14 +17,17 @@ public class DefaultUserService implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void save(UserPayload user) {
+    public String save(UserPayload user) {
         if(userRepository.existsByUsername(user.username())) {
             throw new IllegalStateException("users.errors.user_already_exists");
         }
+
         User newUser = new User();
         newUser.setUsername(user.username());
         newUser.setPassword(passwordEncoder.encode(user.password()));
-        this.userRepository.save(newUser);
+
+        User savedUser = this.userRepository.save(newUser);
+        return savedUser.getUsername();
     }
 
     @Override
@@ -43,7 +46,7 @@ public class DefaultUserService implements UserService {
     }
 
     @Override
-    public boolean isAlreadyExists(UserPayload user) {
+    public boolean isUserExists(UserPayload user) {
         return this.userRepository.existsByUsername(user.username());
     }
 }
