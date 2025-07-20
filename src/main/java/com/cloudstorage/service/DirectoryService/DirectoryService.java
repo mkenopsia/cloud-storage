@@ -17,7 +17,7 @@ public interface DirectoryService {
 
     DirectoryPayload getDirectoryInfo(String path) throws NoSuchFileException;
 
-    void deleteDirectory(String path) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    void deleteDirectory(String path) throws NoSuchFileException;
 
     void downloadDirectory(String path, ServletOutputStream outputStream, HttpServletResponse response) throws NoSuchFileException;
 

@@ -4,7 +4,6 @@ import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
 import com.cloudstorage.service.ResourceService.FileService;
-import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -23,8 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @RestController
@@ -50,7 +47,7 @@ public class ResourceController {
     public ResponseEntity<?> uploadFile(@Parameter(name = "path", description = "Путь до директории для загрузки, заканчивающийся на /", example = "folder1/folder2/", required = true)
                                         @RequestParam("path") String path,
                                         @Parameter(name = "files", description = "Файлы для загрузки из file input в формате MultipartFile", required = true)
-                                        @RequestParam("files") List<MultipartFile> files) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+                                        @RequestParam("files") List<MultipartFile> files) throws FileAlreadyExistsException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -83,8 +80,8 @@ public class ResourceController {
     })
     public ResponseEntity<?> getResourceInfo(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/", required = true)
                                              @RequestParam("path") String path
-    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        if (path.isBlank()) { //TODO убрать колбасы из ошибок
+    ) throws NoSuchFileException {
+        if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
 
@@ -105,7 +102,7 @@ public class ResourceController {
     })
     public ResponseEntity<?> deleteResource(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/file.txt", required = true)
                                             @RequestParam("path") String path
-    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    ) throws NoSuchFileException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -131,7 +128,7 @@ public class ResourceController {
     })
     public void downloadResource(@Parameter(name = "path", description = "Путь до ресурса", example = "folder1/folder2/file.txt", required = true)
                                  @RequestParam("path") String path, HttpServletResponse response
-    ) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    ) throws IOException {
         if (path.isBlank()) {
             throw new IllegalArgumentException("validation.error.path.blank_path");
         }
@@ -218,7 +215,7 @@ public class ResourceController {
             @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
     })
-    public ResponseEntity<?> searchResources(
+    public ResponseEntity<List<FilePayload>> searchResources(
             @Parameter(name = "query", description = "Поисковый запрос в URL-encoded формате", example = "file2", required = true)
             @RequestParam("query") String query) {
         if (query.isBlank()) {

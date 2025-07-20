@@ -39,14 +39,14 @@ public class RegisterController {
             @ApiResponse(responseCode = "409", description = "Пользователь с таким именем уже существует", content = @Content),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content)
     })
-    public ResponseEntity<?> register(@Valid @RequestBody UserPayload userPayload,
+    public ResponseEntity<UsernamePayload> register(@Valid @RequestBody UserPayload userPayload,
                                       BindingResult bindingResult) throws BindException, NoSuchFileException {
         if(bindingResult.hasErrors()) {
             throw new BindException(bindingResult);
         }
 
-        this.userService.save(userPayload);
+        String username = this.userService.save(userPayload);
         this.directoryService.createUserRootDirectory(userPayload);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", userPayload.username()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UsernamePayload(username));
     }
 }

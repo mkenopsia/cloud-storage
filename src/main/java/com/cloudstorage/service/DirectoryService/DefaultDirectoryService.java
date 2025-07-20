@@ -8,7 +8,6 @@ import com.cloudstorage.service.ResourceService.FileService;
 import com.cloudstorage.service.UserService.UserService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
-import io.minio.errors.*;
 import io.minio.messages.Item;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,11 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,28 +80,32 @@ public class DefaultDirectoryService implements DirectoryService {
 
 
     @Override
-    public void deleteDirectory(String path) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void deleteDirectory(String path) throws NoSuchFileException {
         String fullDirectoryPath = getUserPrefix() + path;
 
         if (!isDirectoryExists(fullDirectoryPath)) {
             throw new NoSuchFileException("minio.directory.error.directory_not_exists");
         }
 
-        Iterable<Result<Item>> results = this.minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(bucketName)
-                        .prefix(fullDirectoryPath)
-                        .recursive(true)
-                        .build()
-        );
-
-        for (Result<Item> res : results) {
-            this.minioClient.removeObject(
-                    RemoveObjectArgs.builder()
+        try {
+            Iterable<Result<Item>> results = this.minioClient.listObjects(
+                    ListObjectsArgs.builder()
                             .bucket(bucketName)
-                            .object(res.get().objectName())
+                            .prefix(fullDirectoryPath)
+                            .recursive(true)
                             .build()
             );
+
+            for (Result<Item> res : results) {
+                this.minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(res.get().objectName())
+                                .build()
+                );
+            }
+        } catch (Exception exception) {
+            throw new RuntimeException();
         }
     }
 

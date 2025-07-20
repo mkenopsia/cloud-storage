@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.NoSuchFileException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class DirectoryController {
             @ApiResponse(responseCode = "404", description = "Папка не существует", content = @Content),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content),
     })
-    public ResponseEntity<?> getDirectoryContent(
+    public ResponseEntity<List<FilePayload>> getDirectoryContent(
             @Parameter(name = "path", description = "Путь до директории, заканчивающийся на /", example = "folder1/folder2/", required = true)
             @RequestParam("path") String path
     ) throws NoSuchFileException {
@@ -60,7 +61,7 @@ public class DirectoryController {
             @ApiResponse(responseCode = "409", description = "Папка с таким именем уще существует", content = @Content),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content)
     })
-    public ResponseEntity<?> createDirectory(
+    public ResponseEntity<DirectoryPayload> createDirectory(
             @Parameter(name = "path", description = "Путь до директории, заканчивающийся на /", example = "folder1/folder2/", required = true)
             @RequestParam("path") String path
     ) throws NoSuchFileException {

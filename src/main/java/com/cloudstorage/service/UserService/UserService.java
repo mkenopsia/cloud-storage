@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserService {
 
-    void save(UserPayload user);
+    String save(UserPayload user);
 
     Optional<User> findById(Integer id);
 
@@ -16,5 +16,5 @@ public interface UserService {
 
     void deleteById(Integer id);
 
-    boolean isAlreadyExists(UserPayload user);
+    boolean isUserExists(UserPayload user);
 }

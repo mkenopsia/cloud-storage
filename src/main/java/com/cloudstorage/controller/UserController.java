@@ -28,7 +28,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Пользователь не авторизован", content = @Content),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка", content = @Content)
     })
-    public ResponseEntity<?> getCurrentUserUsername() {
+    public ResponseEntity<UsernamePayload> getCurrentUserUsername() {
         return ResponseEntity.ok().body(authService.getUsernameFromSession());
     }
 }

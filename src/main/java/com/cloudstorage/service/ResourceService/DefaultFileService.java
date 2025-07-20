@@ -4,7 +4,7 @@ import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.AuthService.AuthService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
-import io.minio.errors.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.messages.Item;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +13,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,26 +32,30 @@ public class DefaultFileService implements FileService {
     private String bucketName;
 
     @Override
-    public List<FilePayload> uploadFile(String path, List<MultipartFile> files) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public List<FilePayload> uploadFile(String path, List<MultipartFile> files) {
         List<FilePayload> uploadedFiles = new ArrayList<>();
 
-        for (var file : files) {
-            String fullFileName = getUserPrefix() + path + file.getOriginalFilename();
+        try {
+            for (var file : files) {
+                String fullFileName = getUserPrefix() + path + file.getOriginalFilename();
 
-            if (isFileExists(fullFileName)) {
-                throw new FileAlreadyExistsException(file.getOriginalFilename(), path, "minio.file.error.already_exists");
+                if (isFileExists(fullFileName)) {
+                    throw new FileAlreadyExistsException(file.getOriginalFilename(), path, "minio.file.error.already_exists");
+                }
+
+                this.minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(fullFileName)
+                                .stream(file.getInputStream(), file.getSize(), -1)
+                                .contentType(file.getContentType())
+                                .build()
+                );
+
+                uploadedFiles.add(createFilePayload(path, file.getOriginalFilename(), file.getSize(), "FILE"));
             }
-
-            this.minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fullFileName)
-                            .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(file.getContentType())
-                            .build()
-            );
-
-            uploadedFiles.add(createFilePayload(path, file.getOriginalFilename(), file.getSize(), "FILE"));
+        } catch (Exception exception) {
+            throw new RuntimeException();
         }
 
         return uploadedFiles;
@@ -68,7 +69,8 @@ public class DefaultFileService implements FileService {
         return new FilePayload(path, name, size, type);
     }
 
-    private boolean isFileExists(String fileName) {
+    @Override
+    public boolean isFileExists(String fileName) {
         try {
             this.minioClient.statObject(StatObjectArgs.builder()
                     .bucket(bucketName)
@@ -83,41 +85,49 @@ public class DefaultFileService implements FileService {
     }
 
     @Override
-    public FilePayload getFileInfo(String fullFilePath) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public FilePayload getFileInfo(String fullFilePath) throws NoSuchFileException {
         String fullFileName = getUserPrefix() + fullFilePath;
 
         if (!isFileExists(fullFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
-        var fileInfo = this.minioClient.statObject(StatObjectArgs.builder()
-                .bucket(bucketName)
-                .object(fullFileName)
-                .build());
+        try {
+            var fileInfo = this.minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fullFileName)
+                    .build());
 
-        return createFilePayload(ResourcePathParseUtils.getFilePath(fullFilePath),
-                ResourcePathParseUtils.getFileName(fullFilePath),
-                fileInfo.size(),
-                "FILE");
+            return createFilePayload(ResourcePathParseUtils.getFilePath(fullFilePath),
+                    ResourcePathParseUtils.getFileName(fullFilePath),
+                    fileInfo.size(),
+                    "FILE");
+        } catch (Exception exception) {
+            throw new RuntimeException();
+        }
     }
 
     @Override
-    public void deleteFile(String fullFilePath) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void deleteFile(String fullFilePath) throws NoSuchFileException {
         String fullFileName = getUserPrefix() + fullFilePath;
 
         if (!isFileExists(fullFileName)) {
             throw new NoSuchFileException("minio.file.error.resource_not_found");
         }
 
-        this.minioClient.removeObject(RemoveObjectArgs.builder()
-                .bucket(bucketName)
-                .object(fullFileName)
-                .build()
-        );
+        try {
+            this.minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fullFileName)
+                    .build()
+            );
+        } catch (Exception exception) {
+            throw new RuntimeException();
+        }
     }
 
     @Override
-    public InputStream downloadFile(String path, HttpServletResponse response) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public InputStream downloadFile(String path, HttpServletResponse response) throws NoSuchFileException {
         String fullFileName = getUserPrefix() + path;
 
         if (!isFileExists(fullFileName)) {
@@ -127,12 +137,16 @@ public class DefaultFileService implements FileService {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + ResourcePathParseUtils.getFileName(fullFileName) + "\"");
 
-        return this.minioClient.getObject(
-                GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fullFileName)
-                        .build()
-        );
+        try {
+            return this.minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fullFileName)
+                            .build()
+            );
+        } catch (Exception exception) {
+            throw new RuntimeException();
+        }
     }
 
     @Override
