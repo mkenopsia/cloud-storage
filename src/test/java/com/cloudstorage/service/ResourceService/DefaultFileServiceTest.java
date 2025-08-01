@@ -1,28 +1,23 @@
 package com.cloudstorage.service.ResourceService;
 
-import com.cloudstorage.config.MinioBucketInitializer;
-import com.cloudstorage.config.MinioConfig;
 import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.AuthService.AuthService;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
 import com.cloudstorage.service.UserService.UserService;
-import io.minio.*;
-import org.junit.jupiter.api.*;
-import org.mockito.Mock;
+import io.minio.MinioClient;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.web.multipart.MultipartFile;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 

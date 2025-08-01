@@ -1,5 +1,6 @@
 package com.cloudstorage.controller;
 
+import com.cloudstorage.config.SecurityConfig;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
 import com.cloudstorage.service.ResourceService.FileService;
@@ -8,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,10 +20,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.util.Locale;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(RegisterController.class)
+@WebMvcTest(value = RegisterController.class, excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = SecurityConfig.class))
 class RegisterControllerTest {
 
     @Autowired
@@ -47,6 +53,8 @@ class RegisterControllerTest {
         UserPayload userPayload = new UserPayload("valid_username", "valid_password");
 
         // When + then
+        when(userService.save(userPayload)).thenReturn(userPayload.username());
+
         mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

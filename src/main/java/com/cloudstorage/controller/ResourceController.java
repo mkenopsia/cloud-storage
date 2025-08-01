@@ -171,7 +171,7 @@ public class ResourceController {
             DirectoryPayload directoryPayload = this.directoryService.renameDirectory(oldName, newName);
             return ResponseEntity.ok(directoryPayload);
         } else {
-            throw new UnsupportedOperationException("validation.error.logic.invalid_operation"); //TODO: сделать хендлер
+            throw new UnsupportedOperationException("validation.error.logic.invalid_operation");
         }
     }
 
@@ -200,9 +200,9 @@ public class ResourceController {
         } else if (!from.endsWith("/") && to.endsWith("/")) {
             FilePayload filePayload = this.fileService.moveFile(from, to);
             return ResponseEntity.ok(filePayload);
+        } else {
+            throw new UnsupportedOperationException("validation.error.logic.invalid_operation");
         }
-
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/search")

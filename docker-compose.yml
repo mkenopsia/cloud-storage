@@ -10,6 +10,8 @@ services:
       - "5433:5432"
 #    volumes:
 #      - postgres_/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 2s
@@ -29,6 +31,8 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    volumes:
+      - minio_data:/data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -46,20 +50,10 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATA_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     ports:
-      - "8081:8081"
+      - "8080:8080"
 
-  frontend:
-    build:
-      context: ./cloud-storage-frontend/.
-      dockerfile: Dockerfile
-    container_name: cloud-storage-frontend
-    ports:
-      - "8080:80"
-#
-#volumes:
-#  postgres_:
-#    driver: local
-#    driver_opts:
-#      type: none
-#      device: /dev/null
-#      o: bind
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
