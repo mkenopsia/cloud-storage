@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 public class ResourcePathParseUtils {
 
     public static String getFileName(String fullFilePath) {
+        if(fullFilePath.endsWith("/")) return "";
+        if(!fullFilePath.contains("/")) return fullFilePath;
+
         String[] parts = fullFilePath.split("/");
 
         return parts[parts.length - 1];

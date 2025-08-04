@@ -4,7 +4,7 @@ import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.service.AuthService.AuthService;
-import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.FileService.FileService;
 import com.cloudstorage.service.UserService.UserService;
 import com.cloudstorage.utils.ResourcePathParseUtils;
 import io.minio.*;
@@ -48,7 +48,8 @@ public class DefaultDirectoryService implements DirectoryService {
         return new DirectoryPayload(getDirectoryPath(path), getDirectoryName(path), "DIRECTORY");
     }
 
-    private boolean isDirectoryExists(String path) {
+    @Override
+    public boolean isDirectoryExists(String path) {
         Iterable<Result<Item>> results = this.minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(bucketName)
@@ -176,8 +177,8 @@ public class DefaultDirectoryService implements DirectoryService {
             );
 
             for (var result : results) {
-                String oldFileName = result.get().objectName();
-                String newFileName = fullNewDirectoryPath + oldFileName.substring(fullOldDirectoryPath.length());
+                String oldFileName = cutUserPrefix(result.get().objectName());
+                String newFileName = newDirectoryName + oldFileName.substring(oldDirectoryName.length());
 
                 this.fileService.renameFile(oldFileName, newFileName);
             }
@@ -207,8 +208,8 @@ public class DefaultDirectoryService implements DirectoryService {
             );
 
             for (var result : results) {
-                String oldFileName = result.get().objectName();
-                String newDirectoryName = fullToDirectoryPath + cutInnerDirectoryPath(oldFileName, fullFromDirectoryPath);
+                String oldFileName = cutUserPrefix(result.get().objectName());
+                String newDirectoryName = toDirectory + cutInnerDirectoryPath(oldFileName, fromDirectory);
 
                 this.fileService.moveFile(oldFileName, newDirectoryName);
             }
@@ -227,10 +228,17 @@ public class DefaultDirectoryService implements DirectoryService {
      * Метод нужен для таких случаев: пермещаем папку ...folder/ и у нее есть внутренняя папка
      * ...folder/innerFolder/file.txt
      * метод обрежет хвост (...) до папки folder и уберет название файла и выдаст в итоге внутреннюю структуру папок
+     * Используется для перемещения внутренних папок при перемещении родительской папки
      */
     private String cutInnerDirectoryPath(String fullPath, String fromDirectory) {
         return fullPath.substring(fromDirectory.length() - (getDirectoryName(fromDirectory)).length() - 1,
                 fullPath.length() - ResourcePathParseUtils.getFileName(fullPath).length());
+    }
+
+    private String cutUserPrefix(String fullPath) {
+        return Arrays.stream(fullPath.split("/"))
+                .skip(1)
+                .collect(Collectors.joining("/")) + "/";
     }
 
     @Override
@@ -270,7 +278,7 @@ public class DefaultDirectoryService implements DirectoryService {
     public DirectoryPayload createDirectory(String directoryPath) throws NoSuchFileException, UnsupportedOperationException {
         String fullDirectoryPath = getUserPrefix() + directoryPath;
 
-        if (!isDirectoryInRoot(fullDirectoryPath) && !isDirectoryExists(getDirectoryPath(fullDirectoryPath))) {
+        if (!isDirectoryInRoot(getDirectoryPath(fullDirectoryPath)) && !isDirectoryExists(getDirectoryPath(fullDirectoryPath))) {
             throw new NoSuchFileException("minio.directory.error.parent_directory_not_exists");
         }
 

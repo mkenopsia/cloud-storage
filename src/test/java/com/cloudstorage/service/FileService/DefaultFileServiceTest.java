@@ -254,6 +254,32 @@ class DefaultFileServiceTest {
     }
 
     @Test
+    public void TestMoveRootFile_successfulMoving() throws Exception {
+        // Given
+        when(authService.getUserIdFromSession()).thenReturn(123);
+
+        String filePath = "";
+        String filename = "testMoving2.txt";
+        String fullFilePath = "user-123-files/" + filePath + filename;
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                filename,
+                "text/plain",
+                "test dau".getBytes()
+        );
+
+        fileService.uploadFile(filePath, List.of(file));
+
+        // When + Then
+        String to = "test123_2/";
+        fileService.moveFile(filePath + filename, to);
+
+        assertFalse(fileService.isFileExists(fullFilePath));
+        assertTrue(fileService.isFileExists("user-123-files/" + to + filename));
+    }
+
+    @Test
     public void TestSearching_successfulSearching() throws Exception {
         // Given
         when(authService.getUserIdFromSession()).thenReturn(123);
