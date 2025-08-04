@@ -3,7 +3,7 @@ package com.cloudstorage.controller;
 import com.cloudstorage.controller.payload.DirectoryPayload;
 import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
-import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.FileService.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;

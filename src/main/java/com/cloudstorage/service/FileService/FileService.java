@@ -1,4 +1,4 @@
-package com.cloudstorage.service.ResourceService;
+package com.cloudstorage.service.FileService;
 
 import com.cloudstorage.controller.payload.FilePayload;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,7 +20,7 @@ public interface FileService {
 
     FilePayload renameFile(String oldName, String newName) throws NoSuchFileException, FileAlreadyExistsException;
 
-    FilePayload moveFile(String from, String to) throws NoSuchFileException, FileAlreadyExistsException;
+    FilePayload moveFile(String file, String directoryForMoving) throws NoSuchFileException, FileAlreadyExistsException;
 
     List<FilePayload> findResources(String query);
 

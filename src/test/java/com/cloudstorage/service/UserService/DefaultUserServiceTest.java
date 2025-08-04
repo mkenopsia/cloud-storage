@@ -5,7 +5,7 @@ import com.cloudstorage.config.MinioConfig;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.entity.User;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
-import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.FileService.FileService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

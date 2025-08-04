@@ -3,7 +3,7 @@ package com.cloudstorage.controller;
 import com.cloudstorage.config.SecurityConfig;
 import com.cloudstorage.controller.payload.UserPayload;
 import com.cloudstorage.service.DirectoryService.DirectoryService;
-import com.cloudstorage.service.ResourceService.FileService;
+import com.cloudstorage.service.FileService.FileService;
 import com.cloudstorage.service.UserService.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

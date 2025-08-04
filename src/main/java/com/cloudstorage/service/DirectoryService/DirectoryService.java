@@ -30,4 +30,6 @@ public interface DirectoryService {
     DirectoryPayload createDirectory(String path) throws NoSuchFileException, UnsupportedOperationException;
 
     void createUserRootDirectory(UserPayload userPayload) throws NoSuchFileException;
+
+    boolean isDirectoryExists(String path);
 }

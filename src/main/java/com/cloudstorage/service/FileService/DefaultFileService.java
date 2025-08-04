@@ -1,4 +1,4 @@
-package com.cloudstorage.service.ResourceService;
+package com.cloudstorage.service.FileService;
 
 import com.cloudstorage.controller.payload.FilePayload;
 import com.cloudstorage.service.AuthService.AuthService;
@@ -181,7 +181,7 @@ public class DefaultFileService implements FileService {
                             .build()
             );
 
-            this.deleteFile(fullOldFileName);
+            this.deleteFile(oldName);
 
             this.minioClient.putObject(
                     PutObjectArgs.builder()
